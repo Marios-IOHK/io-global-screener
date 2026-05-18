@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IO Global — Candidate Screener</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f11; --surface: #16181c; --surface2: #1e2026;
+    --border: #2a2d35; --text: #e8eaf0; --muted: #7a7f8e;
+    --accent: #4f9eff; --green: #34d399; --amber: #fbbf24; --red: #f87171;
+    --green-bg: rgba(52,211,153,0.1); --red-bg: rgba(248,113,113,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; }
+  header { padding: 1.5rem 2.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+  .logo-text { font-size: 16px; font-weight: 600; }
+  .logo-sub { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+  #last-run { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .main { padding: 2rem 2.5rem; max-width: 1000px; margin: 0 auto; }
+  .setup-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .setup-panel h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 1rem; }
+  .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media(max-width:640px){ .setup-grid { grid-template-columns: 1fr; } }
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-group.full { grid-column: 1 / -1; }
+  label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  input, textarea { font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); width: 100%; outline: none; transition: border-color 0.15s; }
+  input:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+  select { font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; outline: none; }
+  .setup-actions { display: flex; gap: 10px; margin-top: 1rem; align-items: center; flex-wrap: wrap; }
+  .jobs-list { margin-top: 0.75rem; }
+  .job-chip { display: inline-flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; margin: 4px; font-size: 12px; cursor: pointer; }
+  .job-chip.active { border-color: var(--accent); color: var(--accent); }
+  .job-chip button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+  .job-chip button:hover { color: var(--red); }
+  .tag { font-size: 11px; font-family: 'DM Mono', monospace; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; color: var(--muted); }
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 1.5rem; }
+  .btn { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; transition: all 0.15s; }
+  .btn:hover:not(:disabled) { background: var(--surface2); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #6aadff; border-color: #6aadff; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .stat-value { font-size: 24px; font-weight: 600; font-family: 'DM Mono', monospace; }
+  .stat-value.green { color: var(--green); }
+  .candidate { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 10px; transition: border-color 0.15s; }
+  .candidate:hover { border-color: #3a3d45; }
+  .candidate.is-new { border-left: 3px solid var(--green); }
+  .candidate-top { display: flex; align-items: flex-start; gap: 14px; }
+  .avatar { width: 40px; height: 40px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; color: var(--accent); flex-shrink: 0; font-family: 'DM Mono', monospace; }
+  .candidate-meta { flex: 1; min-width: 0; }
+  .candidate-name { font-size: 15px; font-weight: 600; }
+  .candidate-title { font-size: 12px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .candidate-loc { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
+  .score-num { font-size: 24px; font-weight: 700; font-family: 'DM Mono', monospace; min-width: 44px; text-align: right; }
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .badge { font-size: 11px; padding: 3px 9px; border-radius: 99px; font-weight: 500; }
+  .badge-new { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+  .badge-strong { background: rgba(79,158,255,0.1); color: var(--accent); border: 1px solid rgba(79,158,255,0.2); }
+  .badge-tag { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .score-bar { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .score-track { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 2px; }
+  .reasoning { font-size: 12px; color: var(--muted); margin-top: 12px; line-height: 1.7; padding-top: 12px; border-top: 1px solid var(--border); }
+  .workable-link { font-size: 11px; color: var(--accent); text-decoration: none; margin-top: 8px; display: inline-block; font-family: 'DM Mono', monospace; opacity: 0.8; }
+  .workable-link:hover { opacity: 1; }
+  .state-box { text-align: center; padding: 4rem 2rem; color: var(--muted); }
+  .state-box p { font-size: 14px; line-height: 1.7; max-width: 400px; margin: 0 auto; }
+  .error-box { background: var(--red-bg); border: 1px solid rgba(248,113,113,0.2); border-radius: 10px; padding: 1rem 1.25rem; color: var(--red); font-size: 13px; margin-bottom: 1.5rem; }
+  .filter-count { font-size: 12px; color: var(--muted); margin-bottom: 1rem; font-family: 'DM Mono', monospace; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo-text">IO Global — Candidate Screener</div>
+    <div class="logo-sub">Powered by Workable + Claude AI</div>
+  </div>
+  <span id="last-run"></span>
+</header>
+<div class="main">
+  <div class="setup-panel">
+    <h2>Role Setup</h2>
+    <div class="setup-grid">
+      <div class="field-group">
+        <label>Job Title</label>
+        <input type="text" id="job-title" placeholder="e.g. Investment Manager - Realfi" />
+      </div>
+      <div class="field-group">
+        <label>Workable Job Shortcode</label>
+        <input type="text" id="job-shortcode" placeholder="e.g. 089044FA9A" style="font-family:'DM Mono',monospace;" />
+      </div>
+      <div class="field-group full">
+        <label>Hiring Manager Notes <span class="tag">used for AI scoring</span></label>
+        <textarea id="hiring-notes" placeholder="Paste your kick-off call notes here — must-haves, nice-to-haves, red flags, seniority, location preferences, culture fit signals, etc."></textarea>
+      </div>
+    </div>
+    <div class="setup-actions">
+      <button class="btn btn-primary btn-sm" onclick="saveJob()">+ Save Job</button>
+      <span style="font-size:12px;color:var(--muted)">Save a job to screen it — you can have multiple roles</span>
+    </div>
+    <div class="jobs-list" id="jobs-list"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="fetch-btn" onclick="runScreen()" disabled>Select a job above to screen</button>
+    <button class="btn" id="new-btn" onclick="toggleNewOnly()">Show new only</button>
+    <select id="sort-select" onchange="renderCandidates()">
+      <option value="score">Sort by score</option>
+      <option value="name">Sort by name</option>
+      <option value="stage">Sort by stage</option>
+    </select>
+    <select id="min-score" onchange="renderCandidates()">
+      <option value="0">All scores</option>
+      <option value="50" selected>50+ only</option>
+      <option value="60">60+ only</option>
+      <option value="70">70+ only</option>
+    </select>
+    <button class="btn btn-sm" onclick="clearSeen()" style="margin-left:auto;color:var(--muted);font-size:12px">Reset "new" tracking</button>
+  </div>
+
+  <div class="stats" id="stats" style="display:none">
+    <div class="stat"><div class="stat-label">Total</div><div class="stat-value" id="s-total">0</div></div>
+    <div class="stat"><div class="stat-label">New</div><div class="stat-value green" id="s-new">0</div></div>
+    <div class="stat"><div class="stat-label">Score 50+</div><div class="stat-value" id="s-50">0</div></div>
