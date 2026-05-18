@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/api/candidates", "destination": "/api/candidates.js" },
+    { "source": "/api/score", "destination": "/api/score.js" },
+    { "source": "/", "destination": "/index.html" }
+  ]
+}
