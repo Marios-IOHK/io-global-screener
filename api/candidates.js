@@ -11,15 +11,20 @@ export default async function handler(req, res) {
   const SUBDOMAIN = 'io-global';
 
   let all = [];
-  let url = `https://www.workable.com/spi/v3/accounts/${SUBDOMAIN}/jobs/${shortcode}/candidates?limit=100`;
+  let url = `https://www.workable.com/spi/v3/accounts/${SUBDOMAIN}/jobs/${shortcode}/candidates?limit=100&stage_slug=applied`;
 
   while (url) {
     const r = await fetch(url, { headers: { 'Authorization': `Bearer ${WORKABLE_KEY}` } });
     if (!r.ok) { res.status(r.status).json({ error: `Workable error ${r.status}` }); return; }
     const data = await r.json();
-    all = all.concat(data.candidates || []);
+    // Only include non-disqualified candidates in the Applied stage
+    const filtered = (data.candidates || []).filter(c =>
+      !c.disqualified &&
+      c.stage_kind === 'applied'
+    );
+    all = all.concat(filtered);
     url = data.paging?.next || null;
   }
 
-  res.status(200).json({ candidates: all });
+  res.status(200).json({ candidates: all, total: all.length });
 }
