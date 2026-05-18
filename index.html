@@ -253,8 +253,9 @@ async function runScreen() {
   document.getElementById('list').innerHTML = '<div class="state-box"><p>Fetching candidates from Workable...</p></div>';
 
   try {
-    const r = await fetch(`/api/candidates?shortcode=${job.shortcode}`);
-    if (!r.ok) { const e = await r.json().catch(()=>{}); throw new Error(e?.error || `Error ${r.status}`); }
+const from = document.getElementById('days-from').value || 0;
+const to = document.getElementById('days-to').value || 30;
+const r = await fetch(`/api/candidates?shortcode=${job.shortcode}&from=${from}&to=${to}`);    if (!r.ok) { const e = await r.json().catch(()=>{}); throw new Error(e?.error || `Error ${r.status}`); }
     const data = await r.json();
     const candidates = data.candidates || [];
 
