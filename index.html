@@ -115,22 +115,28 @@
     <div class="jobs-list" id="jobs-list"></div>
   </div>
 
-  <div class="controls">
-    <button class="btn btn-primary" id="fetch-btn" onclick="runScreen()" disabled>Select a job above to screen</button>
-    <button class="btn" id="new-btn" onclick="toggleNewOnly()">Show new only</button>
-    <select id="sort-select" onchange="renderCandidates()">
-      <option value="score">Sort by score</option>
-      <option value="name">Sort by name</option>
-      <option value="stage">Sort by stage</option>
-    </select>
-    <select id="min-score" onchange="renderCandidates()">
-      <option value="0">All scores</option>
-      <option value="50" selected>50+ only</option>
-      <option value="60">60+ only</option>
-      <option value="70">70+ only</option>
-    </select>
-    <button class="btn btn-sm" onclick="clearSeen()" style="margin-left:auto;color:var(--muted);font-size:12px">Reset "new" tracking</button>
+<div class="controls">
+  <button class="btn btn-primary" id="fetch-btn" onclick="runScreen()" disabled>Select a job above to screen</button>
+  <button class="btn" id="new-btn" onclick="toggleNewOnly()">Show new only</button>
+  <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)">
+    Days ago:
+    <input type="number" id="days-from" value="0" min="0" style="width:60px;text-align:center" title="From (more recent)" />
+    <span>to</span>
+    <input type="number" id="days-to" value="30" min="1" style="width:60px;text-align:center" title="To (older)" />
   </div>
+  <select id="sort-select" onchange="renderCandidates()">
+    <option value="score">Sort by score</option>
+    <option value="name">Sort by name</option>
+    <option value="stage">Sort by stage</option>
+  </select>
+  <select id="min-score" onchange="renderCandidates()">
+    <option value="0">All scores</option>
+    <option value="50" selected>50+ only</option>
+    <option value="60">60+ only</option>
+    <option value="70">70+ only</option>
+  </select>
+  <button class="btn btn-sm" onclick="clearSeen()" style="margin-left:auto;color:var(--muted);font-size:12px">Reset "new" tracking</button>
+</div>
 
   <div class="stats" id="stats" style="display:none">
     <div class="stat"><div class="stat-label">Total</div><div class="stat-value" id="s-total">0</div></div>
