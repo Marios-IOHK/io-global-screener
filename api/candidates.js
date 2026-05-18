@@ -9,20 +9,40 @@ export default async function handler(req, res) {
 
   const WORKABLE_KEY = 'u7OS-cRLg-ZqhfBADwkKpkcmnuUnhG5_h6OeSN1qE-8';
   const SUBDOMAIN = 'io-global';
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   let all = [];
   let url = `https://www.workable.com/spi/v3/accounts/${SUBDOMAIN}/jobs/${shortcode}/candidates?limit=100&stage_slug=applied`;
+  let pageCount = 0;
 
   while (url) {
-    const r = await fetch(url, { headers: { 'Authorization': `Bearer ${WORKABLE_KEY}` } });
-    if (!r.ok) { res.status(r.status).json({ error: `Workable error ${r.status}` }); return; }
-    const data = await r.json();
-    // Only include non-disqualified candidates in the Applied stage
+    // Rate limit protection — max 10 req/10s, so wait 1.2s between pages
+    if (pageCount > 0) await sleep(1200);
+    
+    let attempts = 0;
+    let data = null;
+
+    while (attempts < 3) {
+      attempts++;
+      const r = await fetch(url, { headers: { 'Authorization': `Bearer ${WORKABLE_KEY}` } });
+      
+      if (r.status === 429) {
+        await sleep(5000 * attempts);
+        continue;
+      }
+      
+      if (!r.ok) { res.status(r.status).json({ error: `Workable error ${r.status}` }); return; }
+      data = await r.json();
+      break;
+    }
+
+    if (!data) { res.status(429).json({ error: 'Workable rate limit — please try again in a moment' }); return; }
+
     const filtered = (data.candidates || []).filter(c =>
-      !c.disqualified &&
-      c.stage_kind === 'applied'
+      !c.disqualified && c.stage_kind === 'applied'
     );
     all = all.concat(filtered);
+    pageCount++;
     url = data.paging?.next || null;
   }
 
