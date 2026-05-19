@@ -1,7 +1,17 @@
 {
+  "functions": {
+    "api/score.js": {
+      "maxDuration": 60
+    },
+    "api/candidates.js": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     { "source": "/api/candidates", "destination": "/api/candidates.js" },
     { "source": "/api/score", "destination": "/api/score.js" },
+    { "source": "/api/criteria", "destination": "/api/criteria.js" },
+    { "source": "/api/job", "destination": "/api/job.js" },
     { "source": "/", "destination": "/index.html" }
   ]
 }
