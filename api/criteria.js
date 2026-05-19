@@ -9,20 +9,20 @@ export default async function handler(req, res) {
 
   const ANTHROPIC_KEY = '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';
 
+  const cleanDescription = (jobDescription || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
   const prompt = `Extract the key scoring criteria from this job description and hiring notes.
 Return ONLY a valid JSON array, no markdown, no preamble.
 
 Job Description:
-${jobDescription || ''}
+${cleanDescription}
 
 Hiring Notes:
 ${notes || ''}
 
 Return an array of criteria objects. Each should be short and specific (max 8 words).
 Categorise each as "must" (clearly required), "nice" (preferred but not essential), or "exclude" (not relevant for scoring).
-
 Format: [{"text": "5+ years credit analysis experience", "type": "must"}, ...]
-
 Extract 8-15 criteria total. Be specific and actionable.`;
 
   const r = await fetch('https://api.anthropic.com/v1/messages', {
