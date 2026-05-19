@@ -367,8 +367,8 @@ async function setActiveJob(id) {
   const job = jobs.find(j => j.id === id);
   if (!job) return;
   try {
-    const r = await fetch(`/api/candidates?shortcode=${job.shortcode}&from=0&to=1`);
-    if (r.ok) { const d = await r.json(); jobDescription = d.jobDescription || ''; }
+    const r = await fetch(`/api/job?shortcode=${job.shortcode}`);
+    if (r.ok) { const d = await r.json(); jobDescription = d.description || ''; }
   } catch(e) {}
   await loadCriteria(job);
 }
