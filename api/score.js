@@ -17,15 +17,12 @@ export default async function handler(req, res) {
   const excluded = (criteria || []).filter(c => c.type === 'exclude').map(c => `- ${c.text}`).join('\n') || '- None';
 
   const results = [];
+  const BATCH = 5;
 
-  for (let i = 0; i < candidates.length; i++) {
-    const c = candidates[i];
-    let attempts = 0;
+  for (let i = 0; i < candidates.length; i += BATCH) {
+    const batch = candidates.slice(i, i + BATCH);
 
-    while (attempts < 3) {
-      attempts++;
-      try {
-        const prompt = `You are a specialist recruiter. Score this candidate for the role below.
+    const prompt = `You are a specialist recruiter. Score each candidate for the role below.
 
 JOB DESCRIPTION:
 ${cleanDescription}
@@ -42,28 +39,34 @@ ${niceToHave}
 IGNORE THESE CRITERIA:
 ${excluded}
 
-CANDIDATE:
-Name: ${c.name}
-Headline: ${c.headline || ''}
-Location: ${c.address || ''}
-CV / Profile:
-${c.cv_text || 'Not available'}
-${c.github ? `GitHub: ${c.github.url} | Languages: ${c.github.languages.join(', ')} | Last active: ${c.github.lastActive}` : ''}
+CANDIDATES:
+${JSON.stringify(batch.map(c => ({
+  id: c.id,
+  name: c.name,
+  headline: c.headline || '',
+  location: c.address || '',
+  cv_text: (c.cv_text || '').substring(0, 1500),
+  github: c.github ? `${c.github.url} | Languages: ${c.github.languages.join(', ')} | Last active: ${c.github.lastActive}` : null
+})))}
 
-Return ONLY a single valid JSON object, no markdown, no preamble:
-{
-  "id": "${c.id}",
+Return ONLY a valid JSON array, no markdown, no preamble. One object per candidate:
+[{
+  "id": "...",
   "score": 0-100,
   "tier": "Strong Match" or "Good Match" or "Weak Match",
   "decision": "Advance" or "Review" or "Reject",
-  "strengths": ["specific strength 1", "specific strength 2", ...],
-  "gaps": ["specific gap 1", "specific gap 2", ...],
-  "summary": "2-3 sentence summary of this candidate",
-  "github_signal": "one sentence on their GitHub activity or null"
-}
+  "strengths": ["specific strength 1", "specific strength 2", "specific strength 3"],
+  "gaps": ["specific gap 1", "specific gap 2"],
+  "summary": "2-3 sentence summary referencing their actual experience",
+  "github_signal": "one sentence on their GitHub activity, or null if no GitHub"
+}]
 
-Strengths and gaps should be specific to this candidate — reference actual experience, skills, or credentials from their CV.`;
+Be specific — reference actual job titles, companies, skills and credentials from their CV in strengths and gaps.`;
 
+    let attempts = 0;
+    while (attempts < 3) {
+      attempts++;
+      try {
         const r = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
@@ -72,8 +75,8 @@ Strengths and gaps should be specific to this candidate — reference actual exp
             'anthropic-version': '2023-06-01'
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 1000,
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 2000,
             messages: [{ role: 'user', content: prompt }]
           })
         });
@@ -81,16 +84,22 @@ Strengths and gaps should be specific to this candidate — reference actual exp
         if (r.status === 429) { await sleep(5000 * attempts); continue; }
 
         const data = await r.json();
-        const text = data.content?.find(b => b.type === 'text')?.text || '{}';
-        let score = {};
-        try { score = JSON.parse(text.replace(/```json|```/g, '').trim()); } catch {}
-        results.push({ ...score, id: c.id });
-        if (i < candidates.length - 1) await sleep(1000);
+        const text = data.content?.find(b => b.type === 'text')?.text || '[]';
+        let scores = [];
+        try { scores = JSON.parse(text.replace(/```json|```/g, '').trim()); } catch {}
+        results.push(...scores);
+        if (i + BATCH < candidates.length) await sleep(1000);
         break;
 
       } catch(e) {
-        if (attempts >= 3) results.push({ id: c.id, score: 50, tier: 'Weak Match', decision: 'Review', strengths: [], gaps: [], summary: 'Could not score.', github_signal: null });
-        else await sleep(3000 * attempts);
+        if (attempts >= 3) {
+          batch.forEach(c => results.push({
+            id: c.id, score: 50, tier: 'Weak Match', decision: 'Review',
+            strengths: [], gaps: [], summary: 'Could not score — review manually.', github_signal: null
+          }));
+        } else {
+          await sleep(3000 * attempts);
+        }
       }
     }
   }
